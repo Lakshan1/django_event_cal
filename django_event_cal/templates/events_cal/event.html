@@ -1,0 +1,390 @@
+{% extends 'events_cal/base.html' %} 
+
+{% load static %}
+
+{% block extra_head %}
+    <!-- bootsrap cdn -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
+
+    <!-- bootstrap icons cdn -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+
+    <!-- jquery cdn -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <!-- custom css file -->
+    <link rel="stylesheet" href="{% static 'css/event.css' %}">
+
+    <style>
+        .row div {
+            padding: 0 2rem; }
+            .row div table {
+                width: 100%;
+                height: 300px; }
+                .row div table tbody tr th {
+                background-color: black;
+                color: white;
+                text-align: center; }
+                .row div table tbody tr td {
+                text-align: center; }
+                .row div table tbody tr td:hover {
+                    cursor: pointer;
+                    background-color: #ebebeb; }
+            .row .cal-navigator {
+            text-align: center; }
+            .row .cal-navigator a {
+                color: black;
+                font-size: 30px; }
+            .row #right-div .no-event {
+            color: grey;
+            text-align: center;
+            margin-top: 8rem; }
+            .row #right-div .submit-btn {
+            background-color: black;
+            color: white; }
+            .row #right-div .event-header {
+            background: black;
+            margin-bottom: 2rem; }
+            .row #right-div .event-header a {
+                padding-left: 0;
+                text-align: right;
+                color: white; }
+                .row #right-div .event-header a i {
+                padding-left: 0;
+                font-size: 25px;
+                color: white; }
+                .row #right-div .event-header a:hover {
+                color: green; }
+            .row #right-div .event-post {
+            padding-left: 0;
+            margin-bottom: 2rem;
+            margin-left: auto;
+            margin-right: auto; }
+            .row #right-div .event-post .col-md-11 {
+                padding-right: 0; }
+            .row #right-div .event-post div {
+                padding-left: 10px; }
+                .row #right-div .event-post div .event-description {
+                margin-top: 3rem; }
+            .row #right-div .button-groups a {
+            margin-bottom: 1rem; }
+            .row #right-div .button-groups a i {
+                font-size: 25px; }
+            .row #right-div .button-groups a:hover {
+                color: green; }
+            .row #right-div .button-groups .delete-btn:hover {
+            color: red; }
+
+            .date-style {
+            background-color: black;
+            color: white; }
+
+            .date-selected {
+            background-color: red;
+            color: white; }
+
+            .not-visible {
+            display: none; }
+
+    </style>
+{% endblock %}
+
+{% block 'body' %}
+    <div class="row">
+        <div class="col-md-5">
+            {{cal|safe}}
+            {% if navigation == True %}
+            <div class="cal-navigator">
+                <a href="{% url 'index' year previous_month %}"><i class="bi bi-caret-left-fill"></i></a>
+                <a href="{% url 'index' year next_month %}"><i class="bi bi-caret-right-fill"></i></a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-7" id="right-div">
+            <div class="row event-header">
+                <a href="#" class="btn " onclick="addEventFormGenerater()"><i class="bi bi-calendar-plus-fill"></i></a>
+            </div>
+            {% if data != "No Events found..." %}
+                {% for event in data %}
+                    <div class="event-post row">
+                        <div class="col-md-11" style="">
+                            <h2 class="event-title">{{event.event_name}}</h2>
+                            <div class="event-description">
+                                {{event.body}}
+                            </div>
+                        </div>
+                        <div class="col-md-1 button-groups" style="">
+                            <a href="#" class="btn " data-slug="{{event.slug}}" onclick="editEventFormGenerater(this)"><i class="bi bi-pencil-square"></i></a>
+                            <a href="#" class="btn delete-btn" data-slug="{{event.slug}}" onclick="deleteEvent(this)"><i class="bi bi-trash-fill"></i></a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <h1 class="no-event">{{data}}</h1>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        var table_datas = [...document.querySelectorAll("td")]
+        var table_heads = [...document.querySelectorAll("th")]
+        var right_div = document.getElementById("right-div")
+
+        function getCookie(name) {
+            let cookieValue = null
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';')
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+                        break
+                    }
+                }
+            }
+            return cookieValue
+        }
+
+        const csrf = getCookie('csrftoken')
+
+        function tableFormatter(){
+            var month;
+            table_heads.forEach((e) => {
+                if(e.classList.contains("month")){
+                    month = e.innerText
+                }
+            })
+            table_datas.forEach((e) => {
+                if (e.innerText == {{current_date}} && month == `{{current_month_year}}`){
+                    e.classList.remove("date-selected")
+                    e.classList.add("date-style")
+                }else{
+                    e.classList.remove("date-selected")
+                }
+            })
+        }
+
+        function htmlPrinter(res){
+            const data = res.data
+            if(Array.isArray(data)){
+                right_div.innerHTML = ""
+                right_div.innerHTML = `
+                    <div class="row event-header">
+                        <a href="#" class="btn " onclick="addEventFormGenerater()"><i class="bi bi-calendar-plus-fill"></i></a>
+                    </div>
+                `
+                data.forEach(event =>{
+                    right_div.innerHTML += `
+                    <div class="event-post row">
+                        <div class="col-md-11" style="">
+                            <h2 class="event-title">${event.title}</h2>
+                            <div class="event-description">
+                                ${event.description}
+                            </div>
+                        </div>
+                        <div class="col-md-1 button-groups" style="">
+                            <a href="#" class="btn " data-slug="${event.slug}" onclick="editEventFormGenerater(this)"><i class="bi bi-pencil-square"></i></a>
+                            <a href="#" class="btn delete-btn" data-slug="${event.slug}" onclick="deleteEvent(this)"><i class="bi bi-trash-fill"></i></a>
+                        </div>
+                    </div>
+                    `
+                })
+            }else{
+                right_div.innerHTML = ""
+                right_div.innerHTML = `
+                    <div class="row event-header">
+                        <a href="#" class="btn " onclick="addEventFormGenerater()"><i class="bi bi-calendar-plus-fill"></i></a>
+                    </div>
+                `
+                right_div.innerHTML += `
+                        <h1 class="no-event">${data}</h1>
+                    `
+            }
+        }
+
+        const sendSearchData = (date,month,year) => {
+            $.ajax({
+                type: 'POST',
+                url: '/get_event/',
+                data: {
+                    'csrfmiddlewaretoken': csrf,
+                    'date': date,
+                    'month': month,
+                    'year': year,
+                },
+                success: (res) => {
+                    htmlPrinter(res)
+                },
+                error: (err) => {
+                    
+                }
+            })
+        }
+
+        table_datas.forEach((e)=>{
+            e.addEventListener("click",() => {
+                tableFormatter()
+                e.classList.add("date-selected")
+                sendSearchData(e.innerText,"April",2022)
+            })
+        })
+        var found = false
+        var selected_date
+        function addEventFormGenerater(){
+            right_div.innerHTML = ""
+            right_div.innerHTML = `
+                <div class="row event-header">
+                    <a href="#" class="btn " onclick="addEventFormGenerater()"><i class="bi bi-calendar-plus-fill"></i></a>
+                </div>
+            `
+            $.ajax({
+                type: 'GET',
+                url: '/add_event/',
+                data: {
+                    'csrfmiddlewaretoken': csrf,
+                },
+                success: (res) => {
+                    var form = document.createElement("form")
+                    form.setAttribute("method","post")
+                    form.setAttribute("action","{% url 'add_event' %}")
+                    form.innerHTML = res
+                    var btn = document.createElement("input")
+                    btn.setAttribute("type","submit")
+                    btn.setAttribute("value","Add Event")
+                    btn.setAttribute("class","btn submit-btn")
+                    btn.setAttribute("onclick","formSubmit(event,this.form)")
+                    form.appendChild(btn)
+                    right_div.append(form)
+                    table_datas.forEach((e)=>{
+                        var month;
+                        var year;
+                        table_heads.forEach((e) => {
+                            if(e.classList.contains("month")){
+                                month = e.innerText
+                                var lastIndex = month.lastIndexOf(" ")
+                                month = month.substring(0,lastIndex)
+                                year = e.innerText.substr(e.innerText.indexOf(" "))
+                            }
+                        })
+                        
+                        if(e.classList.contains("date-selected")){
+                            found = true
+                            selected_date = e.innerText
+                        }
+
+                        if(found){
+                            document.getElementById("id_date").value = selected_date
+                            document.getElementById("id_month").value = month
+                            document.getElementById("id_year").value = parseInt(year)
+                        }else{
+                            document.getElementById("id_date").value = '{{current_date}}'
+                            document.getElementById("id_month").value = month
+                            document.getElementById("id_year").value = parseInt(year)
+                        }
+                        console.log(found)
+                    })
+                    
+                },
+                error: (err) => {
+                    
+                }
+            })
+        }
+        
+        function editEventFormGenerater(obj){
+            right_div.innerHTML = ""
+            right_div.innerHTML = `
+                <div class="row event-header">
+                    <a href="#" class="btn " onclick="addEventFormGenerater()"><i class="bi bi-calendar-plus-fill"></i></a>
+                </div>
+            `
+            var slug = obj.getAttribute('data-slug')
+            $.ajax({
+                type: 'GET',
+                url: '/edit_event/',
+                data: {
+                    'csrfmiddlewaretoken': csrf,
+                    'data': slug,
+                },
+                success: (res) => {
+                    var form = document.createElement("form")
+                    form.setAttribute("method","post")
+                    form.setAttribute("action","{% url 'edit_event' %}")
+                    form.innerHTML = res
+                    var btn = document.createElement("input")
+                    btn.setAttribute("type","submit")
+                    btn.setAttribute("value","Edit Event")
+                    btn.setAttribute("class","btn submit-btn")
+                    btn.setAttribute("onclick","formSubmit(event,this.form)")
+                    form.appendChild(btn)
+                    right_div.append(form)
+                },
+                error: (err) => {
+                    
+                }
+            })
+        }
+
+        function deleteEvent(obj){
+            right_div.innerHTML = ""
+            right_div.innerHTML = `
+                <div class="row event-header">
+                    <a href="#" class="btn " onclick="addEventFormGenerater()"><i class="bi bi-calendar-plus-fill"></i></a>
+                </div>
+            `
+            var slug = obj.getAttribute('data-slug')
+            $.ajax({
+                type: 'GET',
+                url: '/delete_event/',
+                data: {
+                    'csrfmiddlewaretoken': csrf,
+                    'data': slug,
+                },
+                success: (res) => {
+                    htmlPrinter(res)
+                },
+                error: (err) => {
+                    
+                }
+            })
+        }
+
+        function formSubmit(e,form){
+            e.preventDefault()
+
+            var url = form.getAttribute('action')
+
+            var formData = new FormData()
+            formData.append('csrfmiddlewaretoken',csrf)
+            formData.append('event_name',document.getElementById("id_event_name").value)
+            formData.append('year',document.getElementById("id_year").value)
+            formData.append('month',document.getElementById("id_month").value)
+            formData.append('date',document.getElementById("id_date").value)
+            formData.append('body',document.getElementById("id_body").value)
+            if(url != '/add_event/'){
+                formData.append('slug',document.getElementById("id_slug").value)
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: url,
+                enctype: 'multipart/form-data',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: (res) => {
+                    htmlPrinter(res)    
+                },
+                error: (err) => {
+                    console.log(err)
+                }
+            })
+        }
+    
+        tableFormatter()
+
+    </script>
+{% endblock %}
