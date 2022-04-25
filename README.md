@@ -29,7 +29,7 @@ Usage
     path('', include("django_event_cal.urls")),
 ```
 
-3. Run `python manage.py migrate` to create the events models.
+3. Run `python manage.py makemigrations` and `python manage.py migrate` to create the events models.
 
 4. run import inside views.py like this:
 
