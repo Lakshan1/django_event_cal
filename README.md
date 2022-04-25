@@ -1,6 +1,4 @@
-=====
-Django_event_cal
-=====
+# Django_event_cal
 
 Django_event_cal is a Django app to intergrate event calendar to your app. users can click a specific
 date and see events and also can create, edit and delete events.
