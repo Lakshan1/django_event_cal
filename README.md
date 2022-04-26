@@ -1,5 +1,7 @@
 # Django_event_cal
 
+[![Downloads](https://static.pepy.tech/personalized-badge/django-event-cal?period=total&units=international_system&left_color=black&right_color=brightgreen&left_text=Downloads)](https://pepy.tech/project/django-event-cal)
+
 Django_event_cal is a Django app to intergrate event calendar to your app. users can click a specific
 date and see events and also can create, edit and delete events.
 
